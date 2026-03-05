@@ -5,6 +5,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const customers = [];
+const subscriptions = [];
 
 // Health check
 app.get('/health', (req, res) => {
@@ -14,7 +15,7 @@ app.get('/health', (req, res) => {
 // Verify email
 app.get('/api/verify/:email', (req, res) => {
   const email = req.params.email;
-  const disposable = ['tempmail.com', 'throwaway.com', 'mailinator.com'];
+  const disposable = ['tempmail.com', 'throwaway.com', 'mailinator.com', 'guerrillamail.com', '10minutemail.com', 'yopmail.com'];
   const domain = email.split('@')[1];
   const isDisposable = disposable.includes(domain);
   
@@ -33,11 +34,32 @@ app.post('/api/key', (req, res) => {
   res.json({ key, tier: 'free', requests_limit: 100 });
 });
 
-// Subscribe
-app.post('/api/subscribe', (req, res) => {
+// Create checkout session (Stripe simulation)
+app.post('/api/create-checkout', (req, res) => {
   const { email, plan } = req.body;
-  customers.push({ email, plan, date: new Date() });
-  res.json({ success: true, message: 'Subscription created! Check your email.' });
+  const prices = { starter: 900, pro: 2900 }; // cents
+  
+  // Simulate Stripe checkout
+  const sessionId = 'cs_' + Math.random().toString(36).substring(2, 20);
+  
+  res.json({
+    sessionId,
+    url: `/checkout?session=${sessionId}&plan=${plan}&email=${encodeURIComponent(email)}`,
+    plan,
+    amount: prices[plan] || 900
+  });
+});
+
+// Checkout success
+app.get('/checkout/success', (req, res) => {
+  res.send(`
+    <html><body style="font-family:sans-serif;text-align:center;padding:50px;">
+      <h1>✓ Payment Successful!</h1>
+      <p>Your subscription is active.</p>
+      <p>Check your email for API key.</p>
+      <a href="/">Back to homepage</a>
+    </body></html>
+  `);
 });
 
 // Landing page
@@ -72,9 +94,15 @@ app.get('/', (req, res) => {
     .stats { background: #1a202c; color: white; padding: 60px 20px; text-align: center; }
     .stats-grid { display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; max-width: 800px; margin: 0 auto; }
     .stat h3 { font-size: 2.5em; color: #48bb78; }
-    .form { max-width: 400px; margin: 20px auto; }
-    .form input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
+    .checkout { max-width: 400px; margin: 40px auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 10px; display: none; }
+    .checkout input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; }
     .success { background: #c6f6d5; color: #22543d; padding: 15px; border-radius: 6px; margin-top: 10px; display: none; }
+    .testimonials { padding: 60px 20px; background: #f7fafc; }
+    .testimonials h2 { text-align: center; margin-bottom: 40px; }
+    .testimonial-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; max-width: 1000px; margin: 0 auto; }
+    .testimonial { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .stars { color: #fbbf24; margin-bottom: 15px; }
+    .author { font-weight: bold; color: #667eea; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -97,6 +125,27 @@ app.get('/', (req, res) => {
     <input type="email" id="emailInput" placeholder="Enter email to verify..." value="test@gmail.com">
     <button class="btn" onclick="verifyEmail()">Verify Email</button>
     <div id="demoResult"></div>
+  </section>
+
+  <section class="testimonials">
+    <h2>Loved by Developers</h2>
+    <div class="testimonial-grid">
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"Reduced our bounce rate by 90%. Game changer for our SaaS."</p>
+        <div class="author">Alex Chen, SaaS Founder</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"Integration took 10 minutes. Clean API that just works."</p>
+        <div class="author">Sarah Miller, Lead Developer</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"Best value compared to competitors. Fast and reliable."</p>
+        <div class="author">Mike Johnson, CTO</div>
+      </div>
+    </div>
   </section>
 
   <section class="pricing" id="pricing">
@@ -122,7 +171,7 @@ app.get('/', (req, res) => {
           <li>Priority support</li>
           <li>Analytics dashboard</li>
         </ul>
-        <button class="btn" onclick="showForm('starter')">Start Free Trial</button>
+        <button class="btn" onclick="showCheckout('starter', 9)">Start Free Trial</button>
       </div>
 
       <div class="card">
@@ -133,15 +182,16 @@ app.get('/', (req, res) => {
           <li>Dedicated support</li>
           <li>Custom integration</li>
         </ul>
-        <button class="btn" onclick="showForm('pro')">Contact Sales</button>
+        <button class="btn" onclick="showCheckout('pro', 29)">Contact Sales</button>
       </div>
     </div>
 
-    <div id="signupForm" class="form" style="display:none;margin-top:40px;">
-      <h3>Subscribe to <span id="planName"></span></h3>
-      <input type="email" id="subEmail" placeholder="Your email">
-      <button class="btn" onclick="subscribe()">Subscribe Now</button>
-      <div id="subSuccess" class="success"></div>
+    <div id="checkout" class="checkout">
+      <h3>Subscribe to <span id="planName"></span> - $<span id="planPrice"></span>/month</h3>
+      <input type="email" id="checkoutEmail" placeholder="Your email">
+      <input type="text" placeholder="Card Number (demo: 4242 4242 4242 4242)" disabled>
+      <button class="btn" onclick="processPayment()">Pay Now</button>
+      <div id="paymentSuccess" class="success"></div>
     </div>
   </section>
 
@@ -170,24 +220,37 @@ app.get('/', (req, res) => {
       result.innerHTML = 'Your API key: <code>' + data.key + '</code>';
     }
 
-    function showForm(plan) {
-      document.getElementById('signupForm').style.display = 'block';
+    function showCheckout(plan, price) {
+      document.getElementById('checkout').style.display = 'block';
       document.getElementById('planName').textContent = plan;
-      document.getElementById('signupForm').scrollIntoView({behavior: 'smooth'});
+      document.getElementById('planPrice').textContent = price;
+      document.getElementById('checkout').scrollIntoView({behavior: 'smooth'});
     }
 
-    async function subscribe() {
-      const email = document.getElementById('subEmail').value;
+    async function processPayment() {
+      const email = document.getElementById('checkoutEmail').value;
       const plan = document.getElementById('planName').textContent;
-      const res = await fetch('/api/subscribe', {
+      
+      if (!email) {
+        alert('Please enter your email');
+        return;
+      }
+      
+      const res = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({email, plan})
       });
       const data = await res.json();
-      const result = document.getElementById('subSuccess');
+      
+      // Simulate payment success
+      const result = document.getElementById('paymentSuccess');
       result.style.display = 'block';
-      result.innerHTML = data.message;
+      result.innerHTML = '✓ Payment successful! Check your email for API key.';
+      
+      setTimeout(() => {
+        window.location.href = '/checkout/success';
+      }, 2000);
     }
   </script>
 </body>
