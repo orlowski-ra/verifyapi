@@ -1,36 +1,79 @@
-# 🚀 One-Click Deploy
+# 🚀 ONE-CLICK DEPLOYMENT GUIDE
 
-## Option 1: Railway (Recommended) - 2 minutes
+## VerifyAPI - Deploy in 5 Minutes
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/verifyapi)
+### Option 1: Render (Recommended - Free Forever)
 
-Or manual:
-1. Go to https://railway.app
-2. Click "New Project"
-3. Select "Deploy from GitHub"
-4. Connect this repo
-5. Done!
+**Step 1:** Click this button
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/orlowski-ra/verifyapi)
 
-## Option 2: Render - 2 minutes
+**Step 2:** Create free Render account (GitHub login)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-## Option 3: Local (Immediate)
-
-```bash
-cd /root/.openclaw/workspace/verifyapi
-npm install
-npm start
-```
-
-Then open: http://localhost:3000
+**Step 3:** Done! Your API is live at `https://verifyapi-[random].onrender.com`
 
 ---
 
-## Post-Deploy Checklist
+### Option 2: Railway (Free Tier)
 
-- [ ] Copy your API URL
-- [ ] Test: `curl https://your-url.com/api/verify/test@gmail.com`
-- [ ] Get free API key: `curl -X POST https://your-url.com/api/key`
+**Step 1:** Go to https://railway.app
 
-That's it. Your SaaS is live and earning potential is active.
+**Step 2:** Click "New Project" → "Deploy from GitHub repo"
+
+**Step 3:** Select `orlowski-ra/verifyapi`
+
+**Step 4:** Railway auto-detects Dockerfile and deploys
+
+---
+
+### Option 3: Vercel (Serverless)
+
+**Step 1:** Go to https://vercel.com/new
+
+**Step 2:** Import `orlowski-ra/verifyapi`
+
+**Step 3:** Framework preset: Other
+
+**Step 4:** Deploy
+
+---
+
+## Environment Variables
+
+No configuration needed for basic operation.
+
+Optional:
+- `NODE_ENV=production`
+- `PORT=3000` (auto-set by platform)
+
+---
+
+## Test Your Deployment
+
+```bash
+# Get API key
+curl -X POST https://your-domain.com/api/key
+
+# Verify email
+curl https://your-domain.com/api/verify/test@example.com
+```
+
+---
+
+## Payment Integration (Optional)
+
+To add Stripe payments:
+1. Create Stripe account
+2. Add webhook endpoint
+3. Connect to API key generation
+
+---
+
+## Status
+
+- ✅ Code: Ready
+- ✅ Dockerfile: Ready
+- ✅ render.yaml: Ready
+- ⏳ Deployment: Awaiting one-click activation
+
+**Time to deploy:** 2 minutes
+**Cost:** $0 (free tier)
